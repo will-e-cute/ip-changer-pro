@@ -6,20 +6,20 @@ import customtkinter as ctk
 from tkinter import messagebox
 
 # Configuration de CustomTkinter
-ctk.set_appearance_mode("dark")
+ctk.set_appearance_mode("clear")
 ctk.set_default_color_theme("blue")
 
 class IPChangerApp(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("IP Changer Pro")
-        self.geometry("450x430")
+        self.geometry("370x400")
         self.resizable(False, False)
-        
+
         # Liste des interfaces réseau
         self.interfaces = self.get_network_interfaces()
         self.selected_interface = ctk.StringVar()
-        
+
         self.create_widgets()
         self.populate_interface_info()
 
@@ -54,19 +54,19 @@ class IPChangerApp(ctk.CTk):
         self.var_radio = ctk.StringVar(value="dhcp")
         radio_frame = ctk.CTkFrame(main_frame)
         radio_frame.pack(pady=10)
-        
+
         ctk.CTkRadioButton(
-            radio_frame, 
-            text="DHCP Automatique", 
-            variable=self.var_radio, 
+            radio_frame,
+            text="DHCP Automatique",
+            variable=self.var_radio,
             value="dhcp",
             command=self.toggle_entries
         ).grid(row=0, column=0, padx=5, pady=5)
-        
+
         ctk.CTkRadioButton(
-            radio_frame, 
-            text="Configuration Statique", 
-            variable=self.var_radio, 
+            radio_frame,
+            text="Configuration Statique",
+            variable=self.var_radio,
             value="static",
             command=self.toggle_entries
         ).grid(row=0, column=1, padx=5, pady=5)
@@ -74,14 +74,14 @@ class IPChangerApp(ctk.CTk):
         # Entrées de configuration
         self.entries_frame = ctk.CTkFrame(main_frame)
         self.entries_frame.pack(pady=10, fill="x")
-        
+
         entry_config = [
             ("Adresse IP", "ip", "192.168.1.100"),
             ("Masque de sous-réseau", "subnet", "255.255.255.0"),
             ("Passerelle", "gateway", "192.168.1.1"),
             ("DNS (séparés par -)", "dns", "8.8.8.8 - 8.8.4.4")
         ]
-        
+
         self.entries = {}
         for idx, (label, name, default) in enumerate(entry_config):
             ctk.CTkLabel(self.entries_frame, text=label).grid(row=idx, column=0, padx=5, pady=5)
@@ -92,8 +92,8 @@ class IPChangerApp(ctk.CTk):
 
         # Bouton d'action
         ctk.CTkButton(
-            main_frame, 
-            text="Appliquer la configuration", 
+            main_frame,
+            text="Appliquer la configuration",
             command=self.apply_configuration,
             fg_color="#308a42",
             hover_color="#1f5a2b"
@@ -153,24 +153,24 @@ class IPChangerApp(ctk.CTk):
     def apply_configuration(self):
         if not self.validate_entries():
             return
-            
+
         interface_index = next((idx for idx, desc in self.interfaces if desc == self.selected_interface.get()), None)
-        
+
         if interface_index is None:
             messagebox.showerror("Erreur", "Aucune interface sélectionnée")
             return
-            
+
         try:
             if self.var_radio.get() == "dhcp":
                 success = self.set_dhcp(interface_index)
             else:
                 success = self.set_static_ip(interface_index)
-                
+
             if success:
                 messagebox.showinfo("Succès", "Configuration appliquée avec succès")
             else:
                 messagebox.showerror("Erreur", "Échec de la configuration")
-                
+
         except Exception as e:
             messagebox.showerror("Erreur", f"Une erreur est survenue:\n{str(e)}")
 
@@ -184,18 +184,18 @@ class IPChangerApp(ctk.CTk):
 
     def set_static_ip(self, interface_index):
         nic = wmi.WMI().Win32_NetworkAdapterConfiguration(IPEnabled=True)[interface_index]
-        
+
         ip = self.entries["ip"].get()
         subnet = self.entries["subnet"].get()
         gateway = self.entries["gateway"].get()
         dns_servers = self.entries["dns"].get().split(" - ")
-        
+
         results = [
             nic.EnableStatic(IPAddress=[ip], SubnetMask=[subnet])[0],
             nic.SetGateways(DefaultIPGateway=[gateway])[0],
             nic.SetDNSServerSearchOrder(dns_servers)[0]
         ]
-        
+
         return all(result == 0 for result in results)
 
 if __name__ == "__main__":
